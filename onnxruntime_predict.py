@@ -29,8 +29,8 @@ fps_calculation_interval = 30  # Calculate FPS every 30 frames
 
 class ONNXRuntimeObjectDetection(ObjectDetection):
     """Object Detection class for ONNX Runtime"""
-    def __init__(self, model_filename, labels):
-        super(ONNXRuntimeObjectDetection, self).__init__(labels)
+    def __init__(self, model_filename, labels, num_threads, threshold, overlap, max_detections):
+        super(ONNXRuntimeObjectDetection, self).__init__(labels, num_threads, threshold, overlap, max_detections)
         model = onnx.load(model_filename)
         with tempfile.TemporaryDirectory() as dirpath:
             temp = os.path.join(dirpath, os.path.basename(MODEL_FILENAME))
@@ -54,9 +54,11 @@ class ONNXRuntimeObjectDetection(ObjectDetection):
 def capture_frame(cap):
     grabbed = cap.grab()
     if not grabbed:
+        print('ERROR: Unable to grab frame from camera.')
         sys.exit('ERROR: Unable to grab frame from camera.')
     _, frame = cap.retrieve()
     if frame is None:
+        print('ERROR: Unable to grab frame from camera.')
         sys.exit('ERROR: Unable to retrieve frame from camera.')
     return frame
 
@@ -82,8 +84,7 @@ def display_fps(image, fps):
     cv2.putText(image, fps_text, text_location, cv2.FONT_HERSHEY_PLAIN, font_size, text_color, font_thickness)
     return image
 
-
-def run(model: str, camera_id: int, width: int, height: int, num_threads: int, threshold: float, max_detections: int) -> None:
+def run(model: str, camera_id: int, width: int, height: int, num_threads: int, threshold: float, overlap: float, max_detections: int) -> None:
   """Continuously run inference on images acquired from the camera.
 
   Args:
@@ -101,8 +102,7 @@ def run(model: str, camera_id: int, width: int, height: int, num_threads: int, t
       labels = [label.strip() for label in f.readlines()]
 
   # Load the custom vision ML model 
-  #od_model = ONNXRuntimeObjectDetection(model, labels, num_threads, threshold, max_detections) 
-  od_model = ONNXRuntimeObjectDetection(model, labels) 
+  od_model = ONNXRuntimeObjectDetection(model, labels, num_threads, threshold, overlap, max_detections) 
   
   # Variables to calculate FPS
   counter, fps = 0, 0
@@ -142,7 +142,7 @@ def run(model: str, camera_id: int, width: int, height: int, num_threads: int, t
         start_time = time.time()
 
     frame_with_fps = display_fps(frame, fps)
-    cv2.imshow('object_detector', frame_with_fps)
+    cv2.imshow('WBc detector', frame_with_fps)
       
     # Stop the program if the ESC key is pressed.
     if cv2.waitKey(1) == 27:
@@ -191,20 +191,25 @@ def main():
       type=float, 
       default=0.5)
   parser.add_argument(
+      '--overlap',
+      help="Overlap threshold.",
+      required=False,
+      type=float, 
+      default=0.4)
+  parser.add_argument(
       '--max_detections',
       help="Maximum number of detections.",
       required=False,
       type=int, 
-      default=16)
+      default=8)
 
   args = parser.parse_args()
 
   try:
-    run(args.model, args.cameraId, args.frameWidth, args.frameHeight, args.numThreads, args.threshold, args.max_detections)
+    run(args.model, args.cameraId, args.frameWidth, args.frameHeight, args.numThreads, args.threshold, args.overlap, args.max_detections)
   except Exception as e:
     print(f"An error occurred: {str(e)}")
 
 if __name__ == '__main__':
   main()
-
 
