@@ -32,15 +32,27 @@ is_on = False
 
 # Global variables to store camera settings
 brightness = 100
-contrast = 100
+contrast = 50
+saturation = 50
 
-def on_brightness_change(value):
+
+def on_brightness_change(value, cap):
     global brightness
     brightness = value
+    print(f"brightness: {brightness}")
+    adjust_camera_settings(cap)
 
-def on_contrast_change(value):
+def on_contrast_change(value, cap):
     global contrast
     contrast = value
+    print(f"contrast: {contrast}")
+    adjust_camera_settings(cap)
+
+def on_saturation_change(value, cap):
+    global saturation
+    saturation = value
+    print(f"saturation: {saturation}")
+    adjust_camera_settings(cap)
 
 class ONNXRuntimeObjectDetection(ObjectDetection):
     """Object Detection class for ONNX Runtime"""
@@ -98,9 +110,10 @@ def toggle(event, x, y, flags, param):
         is_on = not is_on
 
 def adjust_camera_settings(cap):
-    global brightness, contrast
-    cap.set(cv2.CAP_PROP_BRIGHTNESS, brightness / 100)
-    cap.set(cv2.CAP_PROP_CONTRAST, contrast / 100)
+    global brightness, contrast, saturation
+    cap.set(cv2.CAP_PROP_BRIGHTNESS, brightness )
+    cap.set(cv2.CAP_PROP_CONTRAST, contrast )
+    cap.set(cv2.CAP_PROP_SATURATION, saturation )
 
 def display_fps(image, fps):
     fps_text = 'FPS = {:.1f}'.format(fps)
@@ -137,14 +150,16 @@ def run(model: str, camera_id: int, width: int, height: int, num_threads: int, t
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
+    adjust_camera_settings(cap)
+
     # Set up mouse callback function for the OpenCV window
     cv2.namedWindow('PiHQ camera')
     cv2.setMouseCallback('PiHQ camera', toggle)
 
     # Create sliders to adjust camera settings
-    cv2.createTrackbar('Brightness', 'PiHQ camera', brightness, 200, on_brightness_change)
-    cv2.createTrackbar('Contrast', 'PiHQ camera', contrast, 200, on_contrast_change)
-
+    cv2.createTrackbar('Brightness', 'PiHQ camera', brightness, 200, lambda value: on_brightness_change(value, cap))
+    cv2.createTrackbar('Contrast', 'PiHQ camera', contrast, 100, lambda value: on_contrast_change(value, cap))
+    cv2.createTrackbar("Saturation", 'PiHQ camera', saturation, 200, lambda value: on_saturation_change(value, cap))
     
     # Read the first frame to determine its dimensions
     success, image = cap.read()
@@ -159,6 +174,9 @@ def run(model: str, camera_id: int, width: int, height: int, num_threads: int, t
     while cap.isOpened():
         frame = capture_frame(cap)
         counter += 1
+
+        # Adjust camera settings
+        adjust_camera_settings(cap)
 
         # Display toggle status on the frame
         toggle_text = "ON" if is_on else "OFF"
