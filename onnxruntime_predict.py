@@ -30,6 +30,18 @@ fps_calculation_interval = 30  # Calculate FPS every 30 frames
 # Global variable to store the state of the button
 is_on = False
 
+# Global variables to store camera settings
+brightness = 100
+contrast = 100
+
+def on_brightness_change(value):
+    global brightness
+    brightness = value
+
+def on_contrast_change(value):
+    global contrast
+    contrast = value
+
 class ONNXRuntimeObjectDetection(ObjectDetection):
     """Object Detection class for ONNX Runtime"""
     def __init__(self, model_filename, labels, num_threads, threshold, overlap, max_detections):
@@ -85,6 +97,11 @@ def toggle(event, x, y, flags, param):
     if event == cv2.EVENT_LBUTTONDOWN:
         is_on = not is_on
 
+def adjust_camera_settings(cap):
+    global brightness, contrast
+    cap.set(cv2.CAP_PROP_BRIGHTNESS, brightness / 100)
+    cap.set(cv2.CAP_PROP_CONTRAST, contrast / 100)
+
 def display_fps(image, fps):
     fps_text = 'FPS = {:.1f}'.format(fps)
     text_location = (left_margin, row_size)
@@ -123,6 +140,11 @@ def run(model: str, camera_id: int, width: int, height: int, num_threads: int, t
     # Set up mouse callback function for the OpenCV window
     cv2.namedWindow('PiHQ camera')
     cv2.setMouseCallback('PiHQ camera', toggle)
+
+    # Create sliders to adjust camera settings
+    cv2.createTrackbar('Brightness', 'PiHQ camera', brightness, 200, on_brightness_change)
+    cv2.createTrackbar('Contrast', 'PiHQ camera', contrast, 200, on_contrast_change)
+
     
     # Read the first frame to determine its dimensions
     success, image = cap.read()
