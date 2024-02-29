@@ -34,9 +34,9 @@ is_on = False
 
 # Global variables to store camera settings
 brightness = 60
-contrast = 50
-saturation = 30
-exposure = 50
+contrast = 90
+saturation = 35
+exposure = 60
 
 def on_brightness_change(value, cap):
     global brightness
@@ -165,6 +165,7 @@ def run(model: str, camera_id: int, width: int, height: int, num_threads: int, t
     # Set up mouse callback function for the OpenCV window
     cv2.namedWindow('PiHQ camera')
     cv2.setMouseCallback('PiHQ camera', toggle)
+    cv2.moveWindow('PiHQ camera', 100, 100)
 
     # Create sliders to adjust camera settings
     cv2.createTrackbar('Brightness', 'PiHQ camera', brightness, 100, lambda value: on_brightness_change(value, cap))
